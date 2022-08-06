@@ -1,0 +1,5 @@
+eclipse.preferences.version=1
+encoding//TOS_CONFIG/tos_config.h=UTF-8
+encoding//User/ch32v30x_it.c=UTF-8
+encoding//User/spi_flash.c=EUC-JP
+encoding//examples/systick_test.c=UTF-8
