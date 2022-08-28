@@ -11,6 +11,7 @@
 
 #include "led_key.h"
 
+#include "pomodoro_clock.h"
 #include "time.h"
 
 extern at_agent_t esp8266_tf_agent;
@@ -116,25 +117,22 @@ extern k_sem_t status_change;
 extern k_chr_fifo_t status_fifo;
 
 
+void mqtt_pub_evt(PomodoroPubType type)
+{  
+  tos_chr_fifo_push(&status_fifo, type);  // normal
+  tos_sem_post(&status_change);
+}
+
+
 void EXTI0_IRQHandler(void)
 {
-  k_tick_t now;
-
-  struct tm *time_info;
-
   EXTI_ClearFlag(EXTI_Line0); // 置中断标志位为零
   led_1_toggle(); 
   // 
-  tos_chr_fifo_push(&status_fifo, 0);  // normal
-  tos_sem_post(&status_change);
+  // tos_chr_fifo_push(&status_fifo, 0);  // normal
+  // tos_sem_post(&status_change);
 
-  //shanghai +8: + 28800
-  now = tos_systick_get() / 1000 + 28800 ;
-  printf("now: %lld sec \r\n", now);
-  time_info = localtime(&now);
-  printf("%d-%d-%d %d:%d:%d\r\n", time_info->tm_year + 1900, time_info->tm_mon + 1, time_info->tm_mday, time_info->tm_hour, time_info->tm_min, time_info->tm_sec);
-
-
+  trigger_pomodoro();
 }
 
 void EXTI1_IRQHandler(void)
@@ -142,8 +140,12 @@ void EXTI1_IRQHandler(void)
   EXTI_ClearFlag(EXTI_Line1); // 置中断标志位为零
   led_2_toggle();
   // 
-  tos_chr_fifo_push(&status_fifo, 1);  // 
-  tos_sem_post(&status_change);
+  // tos_chr_fifo_push(&status_fifo, 1);  // 
+  // tos_sem_post(&status_change);
+  // add water 
+  g_pomodoro_mng.w_cnt += 1;
+  mqtt_pub_evt(PUB_TYPE_WATER);
+  g_evt_tm = tos_systick_get();
 }
 
 void EXTI9_5_IRQHandler(void)
@@ -151,6 +153,10 @@ void EXTI9_5_IRQHandler(void)
   EXTI_ClearFlag(EXTI_Line8); // 置中断标志位为零
   led_3_toggle();
   // 
-  tos_chr_fifo_push(&status_fifo, 2);
-  tos_sem_post(&status_change);
+  // tos_chr_fifo_push(&status_fifo, 2);
+  // tos_sem_post(&status_change);
+  // trigger_pomodoro();
+  g_pomodoro_mng.todo_cnt += 1;
+  mqtt_pub_evt(PUB_TYPE_TODO);
+  g_evt_tm = tos_systick_get();
 }
